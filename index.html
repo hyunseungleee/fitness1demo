@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gym Pro Tracker</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #000000;
+            --card-bg: #1c1c1e;
+            --primary: #d0fd3e; /* 형광색 계열의 스포티한 컬러 */
+            --secondary: #373737;
+            --text: #ffffff;
+            --input-bg: #2c2c2e;
+            --danger: #ff453a;
+        }
+
+        body { 
+            background-color: var(--bg-color); 
+            color: var(--text); 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0; padding: env(safe-area-inset-top) 15px env(safe-area-inset-bottom) 15px;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .container { width: 100%; max-width: 500px; margin: 0 auto; padding-bottom: 40px; }
+        
+        h1 { font-size: 24px; font-weight: 800; margin: 20px 0; color: var(--primary); letter-spacing: -1px; }
+
+        .card { 
+            background: var(--card-bg); 
+            padding: 18px; 
+            border-radius: 20px; 
+            margin-bottom: 15px; 
+        }
+
+        h3 { margin: 0 0 15px 0; font-size: 16px; font-weight: 600; color: #8e8e93; }
+
+        input, select { 
+            background: var(--input-bg); 
+            border: none; 
+            color: white; 
+            padding: 14px; 
+            border-radius: 12px; 
+            font-size: 16px; /* iOS에서 줌 방지를 위해 16px 이상 권장 */
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .set-row { 
+            display: grid; 
+            grid-template-columns: 30px 1fr 1fr 40px; 
+            gap: 10px; 
+            align-items: center; 
+            margin-bottom: 10px; 
+        }
+
+        .set-num { color: var(--primary); font-weight: bold; text-align: center; }
+
+        button { 
+            border: none; 
+            border-radius: 12px; 
+            font-weight: 700; 
+            font-size: 15px;
+            cursor: pointer; 
+            transition: transform 0.1s;
+        }
+
+        button:active { transform: scale(0.96); }
+
+        .btn-reg { background: var(--primary); color: black; padding: 0 15px; }
+        .btn-add-set { background: var(--secondary); color: white; width: 100%; padding: 12px; margin-top: 5px; }
+        .btn-save { background: var(--primary); color: black; width: 100%; padding: 16px; margin-top: 20px; font-size: 17px; }
+        .btn-del { background: transparent; color: var(--danger); font-size: 20px; }
+
+        .chart-container { height: 250px; width: 100%; margin-top: 10px; }
+
+        .history-item { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 12px 0; border-bottom: 0.5px solid #38383a; 
+        }
+        .history-info strong { display: block; font-size: 15px; }
+        .history-info span { font-size: 13px; color: #8e8e93; }
+        .btn-item-del { background: transparent; color: #636366; font-size: 12px; }
+
+        /* 모바일 하단 여백 대처 */
+        .safe-area { height: 30px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>GYM LOG PRO</h1>
+    
+    <section class="card" style="display: flex; gap: 10px;">
+        <input type="text" id="machineName" placeholder="새 머신 추가">
+        <button class="btn-reg" onclick="registerMachine()">추가</button>
+    </section>
+
+    <section class="card">
+        <h3>WORKOUT INPUT</h3>
+        <input type="date" id="workoutDate" style="margin-bottom: 10px;">
+        <select id="machineSelect" onchange="refreshView()" style="margin-bottom: 15px;">
+            <option value="">머신 선택</option>
+        </select>
+        
+        <div id="setContainer"></div>
+        <button class="btn-add-set" onclick="addSetRow()">+ SET ADD</button>
+        <button class="btn-save" onclick="saveWorkout()">SAVE WORKOUT</button>
+    </section>
+
+    <section class="card">
+        <h3>PROGRESS CHART</h3>
+        <div class="chart-container">
+            <canvas id="progressChart"></canvas>
+        </div>
+    </section>
+
+    <section class="card">
+        <h3>HISTORY</h3>
+        <div id="historyList"></div>
+    </section>
+
+    <div class="safe-area"></div>
+</div>
+
+<script>
+    let db = JSON.parse(localStorage.getItem('GymAppDB_V1')) || { machines: [], logs: [] };
+    let myChart = null;
+    let setCount = 0;
+
+    function init() {
+        document.getElementById('workoutDate').value = new Date().toISOString().split('T')[0];
+        const select = document.getElementById('machineSelect');
+        const currentVal = select.value;
+        select.innerHTML = '<option value="">머신 선택</option>';
+        db.machines.sort().forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m; opt.innerText = m;
+            select.appendChild(opt);
+        });
+        select.value = currentVal;
+        if (document.querySelectorAll('.set-row').length === 0) addSetRow();
+        updateChart();
+    }
+
+    function addSetRow() {
+        setCount++;
+        const container = document.getElementById('setContainer');
+        const row = document.createElement('div');
+        row.className = 'set-row';
+        row.id = `set-row-${setCount}`;
+        row.innerHTML = `
+            <div class="set-num">${setCount}</div>
+            <input type="number" class="w-in" placeholder="kg" inputmode="decimal">
+            <input type="number" class="r-in" placeholder="reps" inputmode="numeric">
+            <button class="btn-del" onclick="removeSetRow(${setCount})">×</button>
+        `;
+        container.appendChild(row);
+    }
+
+    function removeSetRow(id) {
+        if (document.querySelectorAll('.set-row').length > 1) {
+            document.getElementById(`set-row-${id}`).remove();
+        }
+    }
+
+    function registerMachine() {
+        const input = document.getElementById('machineName');
+        const name = input.value.trim();
+        if (name && !db.machines.includes(name)) {
+            db.machines.push(name);
+            saveData();
+            init();
+            input.value = '';
+        }
+    }
+
+    function saveWorkout() {
+        const machine = document.getElementById('machineSelect').value;
+        const date = document.getElementById('workoutDate').value;
+        if (!machine || !date) return alert("머신과 날짜를 선택하세요.");
+
+        const ws = document.querySelectorAll('.w-in');
+        const rs = document.querySelectorAll('.r-in');
+        let max1RM = 0, totalV = 0, valid = false;
+
+        ws.forEach((wIn, i) => {
+            const w = parseFloat(wIn.value), r = parseInt(rs[i].value);
+            if (w > 0 && r > 0) {
+                const rm = w * (1 + r/30);
+                if (rm > max1RM) max1RM = rm;
+                totalV += (w * r);
+                valid = true;
+            }
+        });
+
+        if (!valid) return alert("데이터를 입력하세요.");
+
+        db.logs.push({ id: Date.now(), date, machine, rm: max1RM, vol: totalV });
+        saveData();
+        refreshView();
+        document.getElementById('setContainer').innerHTML = '';
+        setCount = 0; addSetRow();
+        alert("저장 완료!");
+    }
+
+    function deleteLog(id) {
+        if (confirm("삭제하시겠습니까?")) {
+            db.logs = db.logs.filter(l => l.id !== id);
+            saveData();
+            refreshView();
+        }
+    }
+
+    function refreshView() { updateChart(); updateHistory(); }
+
+    function updateHistory() {
+        const m = document.getElementById('machineSelect').value;
+        const list = document.getElementById('historyList');
+        const filtered = db.logs.filter(l => l.machine === m).sort((a,b) => new Date(b.date) - new Date(a.date));
+        list.innerHTML = filtered.map(l => `
+            <div class="history-item">
+                <div class="history-info"><strong>${l.date}</strong><span>1RM: ${l.rm.toFixed(1)}kg | Vol: ${l.vol}kg</span></div>
+                <button class="btn-item-del" onclick="deleteLog(${l.id})">DELETE</button>
+            </div>
+        `).join('') || '<p style="text-align:center;color:#444">기록 없음</p>';
+    }
+
+    function updateChart() {
+        const m = document.getElementById('machineSelect').value;
+        if (!m) return;
+        const daily = {};
+        db.logs.filter(l => l.machine === m).forEach(l => {
+            if (!daily[l.date]) daily[l.date] = { rm: 0, vol: 0 };
+            daily[l.date].rm = Math.max(daily[l.date].rm, l.rm);
+            daily[l.date].vol += l.vol;
+        });
+        const dates = Object.keys(daily).sort();
+        const ctx = document.getElementById('progressChart').getContext('2d');
+        if (myChart) myChart.destroy();
+        myChart = new Chart(ctx, {
+            data: {
+                labels: dates,
+                datasets: [
+                    { type: 'line', label: '1RM', data: dates.map(d => daily[d].rm), borderColor: '#d0fd3e', tension: 0.3, yAxisID: 'y' },
+                    { type: 'bar', label: 'Vol', data: dates.map(d => daily[d].vol), backgroundColor: 'rgba(255,255,255,0.1)', yAxisID: 'y1' }
+                ]
+            },
+            options: { 
+                responsive: true, maintainAspectRatio: false,
+                scales: { 
+                    y: { position: 'left', grid: { color: '#333' } },
+                    y1: { position: 'right', grid: { display: false } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    function saveData() { localStorage.setItem('GymAppDB_V1', JSON.stringify(db)); }
+    init();
+</script>
+</body>
+</html>
