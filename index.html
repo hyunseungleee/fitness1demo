@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Gym Pro Tracker</title>
     
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -14,83 +14,125 @@
         :root {
             --bg-color: #000000;
             --card-bg: #1c1c1e;
-            --primary: #d0fd3e; /* 형광색 계열의 스포티한 컬러 */
-            --secondary: #373737;
+            --primary: #d0fd3e; /* 스포티한 형광 연두색 */
+            --secondary: #3a3a3c;
             --text: #ffffff;
             --input-bg: #2c2c2e;
             --danger: #ff453a;
+            --border-radius: 14px;
         }
 
         body { 
             background-color: var(--bg-color); 
             color: var(--text); 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            margin: 0; padding: env(safe-area-inset-top) 15px env(safe-area-inset-bottom) 15px;
+            margin: 0; 
+            /* 아이폰 노치 및 하단 바 영역 대응 */
+            padding: calc(env(safe-area-inset-top) + 10px) 15px calc(env(safe-area-inset-bottom) + 20px) 15px;
             -webkit-tap-highlight-color: transparent;
+            word-break: keep-all;
         }
 
-        .container { width: 100%; max-width: 500px; margin: 0 auto; padding-bottom: 40px; }
+        .container { width: 100%; max-width: 500px; margin: 0 auto; }
         
-        h1 { font-size: 24px; font-weight: 800; margin: 20px 0; color: var(--primary); letter-spacing: -1px; }
+        h1 { font-size: 26px; font-weight: 800; margin: 15px 0 25px 0; color: var(--primary); letter-spacing: -1.5px; text-align: center; }
 
         .card { 
             background: var(--card-bg); 
-            padding: 18px; 
-            border-radius: 20px; 
+            padding: 20px; 
+            border-radius: 22px; 
             margin-bottom: 15px; 
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
         }
 
-        h3 { margin: 0 0 15px 0; font-size: 16px; font-weight: 600; color: #8e8e93; }
+        h3 { margin: 0 0 18px 0; font-size: 15px; font-weight: 700; color: #8e8e93; letter-spacing: -0.5px; text-transform: uppercase; }
 
+        /* 🔥 핵심 수정 부분: 모든 입력창 스타일 통일 및 iOS date 버그 해결 */
         input, select { 
             background: var(--input-bg); 
-            border: none; 
+            border: 1px solid #3a3a3c; 
             color: white; 
-            padding: 14px; 
-            border-radius: 12px; 
-            font-size: 16px; /* iOS에서 줌 방지를 위해 16px 이상 권장 */
+            padding: 15px; 
+            border-radius: var(--border-radius); 
+            font-size: 16px; /* iOS 자동 줌 방지 */
             width: 100%;
-            box-sizing: border-box;
+            box-sizing: border-box; /* 패딩을 너비에 포함 */
+            margin-bottom: 10px;
+            transition: border-color 0.2s;
+            
+            /* iOS 기본 스타일 초기화 (날짜 박스 튀어나옴 방지) */
+            -webkit-appearance: none; 
+            appearance: none;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        /* 날짜 입력창 전용 스타일 (아이콘 색상 등) */
+        input[type="date"] {
+            position: relative;
+            color-scheme: dark; /* iOS 달력 팝업을 다크 모드로 설정 */
+        }
+        
+        /* select 창의 화살표 아이콘 커스텀 (iOS appearance none 대응) */
+        select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/1999/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%238e8e93' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            background-size: 18px;
+            padding-right: 45px;
         }
 
         .set-row { 
             display: grid; 
-            grid-template-columns: 30px 1fr 1fr 40px; 
+            grid-template-columns: 35px 1fr 1fr 45px; 
             gap: 10px; 
             align-items: center; 
-            margin-bottom: 10px; 
+            margin-bottom: 12px; 
         }
 
-        .set-num { color: var(--primary); font-weight: bold; text-align: center; }
+        .set-num { color: var(--primary); font-weight: 800; text-align: center; font-size: 16px; }
 
         button { 
             border: none; 
-            border-radius: 12px; 
+            border-radius: var(--border-radius); 
             font-weight: 700; 
-            font-size: 15px;
+            font-size: 16px;
             cursor: pointer; 
-            transition: transform 0.1s;
+            transition: all 0.2s;
+            box-sizing: border-box;
         }
 
-        button:active { transform: scale(0.96); }
+        button:active { transform: scale(0.97); opacity: 0.8; }
 
-        .btn-reg { background: var(--primary); color: black; padding: 0 15px; }
-        .btn-add-set { background: var(--secondary); color: white; width: 100%; padding: 12px; margin-top: 5px; }
-        .btn-save { background: var(--primary); color: black; width: 100%; padding: 16px; margin-top: 20px; font-size: 17px; }
-        .btn-del { background: transparent; color: var(--danger); font-size: 20px; }
+        /* 머신 등록 섹션 스타일 조정 */
+        .machine-reg-group { display: flex; gap: 10px; margin-bottom: 0; }
+        .machine-reg-group input { margin-bottom: 0; flex: 1; }
+        .btn-reg { background: var(--primary); color: black; padding: 0 20px; height: 50px; }
 
-        .chart-container { height: 250px; width: 100%; margin-top: 10px; }
+        .btn-add-set { background: rgba(255,255,255,0.05); color: #aeaeb2; width: 100%; padding: 14px; margin-top: 5px; border: 1px dashed #444; }
+        .btn-add-set:hover { background: rgba(255,255,255,0.1); color: white; border-color: #666; }
+        
+        .btn-save { background: var(--primary); color: black; width: 100%; padding: 18px; margin-top: 25px; font-size: 18px; font-weight: 800; box-shadow: 0 5px 15px rgba(208, 253, 62, 0.3); }
+        .btn-del { background: transparent; color: var(--danger); font-size: 22px; padding: 0; }
+
+        .chart-container { height: 280px; width: 100%; margin-top: 15px; }
 
         .history-item { 
             display: flex; justify-content: space-between; align-items: center; 
-            padding: 12px 0; border-bottom: 0.5px solid #38383a; 
+            padding: 15px 0; border-bottom: 1px solid #2c2c2e; 
         }
-        .history-info strong { display: block; font-size: 15px; }
-        .history-info span { font-size: 13px; color: #8e8e93; }
-        .btn-item-del { background: transparent; color: #636366; font-size: 12px; }
+        .history-info strong { display: block; font-size: 16px; margin-bottom: 3px; }
+        .history-info span { font-size: 13px; color: #8e8e93; font-weight: 500; }
+        .btn-item-del { background: rgba(255,69,58,0.1); color: var(--danger); padding: 8px 12px; font-size: 12px; border-radius: 8px; }
+        
+        /* 스크롤바 커스텀 */
+        #historyList { max-height: 350px; overflow-y: auto; padding-right: 5px; }
+        #historyList::-webkit-scrollbar { width: 5px; }
+        #historyList::-webkit-scrollbar-thumb { background: #444; border-radius: 5px; }
 
-        /* 모바일 하단 여백 대처 */
-        .safe-area { height: 30px; }
     </style>
 </head>
 <body>
@@ -98,15 +140,20 @@
 <div class="container">
     <h1>GYM LOG PRO</h1>
     
-    <section class="card" style="display: flex; gap: 10px;">
-        <input type="text" id="machineName" placeholder="새 머신 추가">
-        <button class="btn-reg" onclick="registerMachine()">추가</button>
+    <section class="card">
+        <h3>MACHINE REGISTRY</h3>
+        <div class="machine-reg-group">
+            <input type="text" id="machineName" placeholder="새 머신 이름 (예: 벤치프레스)">
+            <button class="btn-reg" onclick="registerMachine()">추가</button>
+        </div>
     </section>
 
     <section class="card">
         <h3>WORKOUT INPUT</h3>
-        <input type="date" id="workoutDate" style="margin-bottom: 10px;">
-        <select id="machineSelect" onchange="refreshView()" style="margin-bottom: 15px;">
+        
+        <input type="date" id="workoutDate">
+        
+        <select id="machineSelect" onchange="refreshView()">
             <option value="">머신 선택</option>
         </select>
         
@@ -126,12 +173,11 @@
         <h3>HISTORY</h3>
         <div id="historyList"></div>
     </section>
-
-    <div class="safe-area"></div>
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('GymAppDB_V1')) || { machines: [], logs: [] };
+    // 로컬 스토리지 키 값 변경으로 데이터 독립성 확보
+    let db = JSON.parse(localStorage.getItem('GymAppDB_FinalV1')) || { machines: [], logs: [] };
     let myChart = null;
     let setCount = 0;
 
@@ -179,6 +225,8 @@
             saveData();
             init();
             input.value = '';
+        } else if (name) {
+            alert("이미 등록된 머신입니다.");
         }
     }
 
@@ -212,7 +260,7 @@
     }
 
     function deleteLog(id) {
-        if (confirm("삭제하시겠습니까?")) {
+        if (confirm("정말 삭제하시겠습니까?")) {
             db.logs = db.logs.filter(l => l.id !== id);
             saveData();
             refreshView();
@@ -228,14 +276,17 @@
         list.innerHTML = filtered.map(l => `
             <div class="history-item">
                 <div class="history-info"><strong>${l.date}</strong><span>1RM: ${l.rm.toFixed(1)}kg | Vol: ${l.vol}kg</span></div>
-                <button class="btn-item-del" onclick="deleteLog(${l.id})">DELETE</button>
+                <button class="btn-item-del" onclick="deleteLog(${l.id})">삭제</button>
             </div>
-        `).join('') || '<p style="text-align:center;color:#444">기록 없음</p>';
+        `).join('') || '<p style="text-align:center;color:#555;font-size:14px;margin-top:20px;">기록이 없습니다.</p>';
     }
 
     function updateChart() {
         const m = document.getElementById('machineSelect').value;
-        if (!m) return;
+        if (!m) {
+            if (myChart) myChart.destroy();
+            return;
+        }
         const daily = {};
         db.logs.filter(l => l.machine === m).forEach(l => {
             if (!daily[l.date]) daily[l.date] = { rm: 0, vol: 0 };
@@ -249,22 +300,22 @@
             data: {
                 labels: dates,
                 datasets: [
-                    { type: 'line', label: '1RM', data: dates.map(d => daily[d].rm), borderColor: '#d0fd3e', tension: 0.3, yAxisID: 'y' },
-                    { type: 'bar', label: 'Vol', data: dates.map(d => daily[d].vol), backgroundColor: 'rgba(255,255,255,0.1)', yAxisID: 'y1' }
+                    { type: 'line', label: '1RM', data: dates.map(d => daily[d].rm), borderColor: '#d0fd3e', backgroundColor: '#d0fd3e', tension: 0.3, yAxisID: 'y', pointRadius: 2 },
+                    { type: 'bar', label: 'Vol', data: dates.map(d => daily[d].vol), backgroundColor: 'rgba(255,255,255,0.08)', yAxisID: 'y1', borderRadius: 5 }
                 ]
             },
             options: { 
                 responsive: true, maintainAspectRatio: false,
                 scales: { 
-                    y: { position: 'left', grid: { color: '#333' } },
-                    y1: { position: 'right', grid: { display: false } }
+                    y: { position: 'left', grid: { color: '#2c2c2e' }, ticks: { color: '#8e8e93', font: { size: 11 } } },
+                    y1: { position: 'right', grid: { display: false }, ticks: { color: '#555', font: { size: 10 } } }
                 },
                 plugins: { legend: { display: false } }
             }
         });
     }
 
-    function saveData() { localStorage.setItem('GymAppDB_V1', JSON.stringify(db)); }
+    function saveData() { localStorage.setItem('GymAppDB_FinalV1', JSON.stringify(db)); }
     init();
 </script>
 </body>
